@@ -3,3 +3,10 @@
     height: 500px;
     border: 1px dotted #ccc;
 }
+
+ul
+{
+    list-style-type: none;
+    font-size: 1.5em;
+    font-weight: bold;
+}

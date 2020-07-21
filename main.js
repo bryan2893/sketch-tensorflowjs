@@ -21,7 +21,7 @@
         mousePressed = false
     });
 
-    canvas.on('mouse:down', function (e) {
+    canvas.on('mouse:down', function () {
         mousePressed = true
     });
 
@@ -46,7 +46,6 @@
     }
 
     const getPredictions = () => {
-        console.log(coords.length)
         if (coords.length >= 2) {
             const img = getImageData();
             const processedImage = preprocess(img)
