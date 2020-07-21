@@ -4,9 +4,10 @@
 
     const clearButton = document.querySelector('#clearButton');
     const canvas = window._canvas = new fabric.Canvas('canvas');
-    const ctx = canvas.getContext('2d');
     const model = await tf.loadLayersModel('https://raw.githubusercontent.com/bryan2893/sketch-tensorflowjs/master/model/model.json');
+    model.predict(tf.zeros([1, 28, 28, 1]))
     var coords = [];
+    var names = [];
     var mousePressed = false;
     canvas.backgroundColor = 'white';
     canvas.borderColor = 'grey';
@@ -31,23 +32,56 @@
     clearButton.onclick = () => {
         canvas.clear();
         coords = [];
+        canvas.backgroundColor = 'white';
+    }
+
+    const loadNames = async () => {
+        const response = await fetch('https://raw.githubusercontent.com/bryan2893/sketch-tensorflowjs/master/model/class_names.txt');
+        const text = await response.text();
+        const lines = text.split(/\n/);
+        for (var i = 0; i < lines.length - 1; i++) {
+            let name = lines[i];
+            names[i] = name;
+        }
     }
 
     const getPredictions = () => {
-        const img = getImage();
-        const processedImage = preprocess(img)
-        const prediction = model.predict(processedImage).dataSync();
-        console.log(findIndicesOfMax(prediction, 5));
-        console.log(findTopValues(prediction, 5));
+        console.log(coords.length)
+        if (coords.length >= 2) {
+            const img = getImageData();
+            const processedImage = preprocess(img)
+            const prediction = model.predict(processedImage).dataSync();
+            const indexes = findIndicesOfMax(prediction, 5);
+            const classes = getClassNames(indexes);
+            showResults(classes);
+        }
     }
 
-    const getImage = () => {
+    const showResults = (results) => {
+        let count = 1;
+        for (let c of results) {
+            const li = document.querySelector(`#_${count}`);
+            li.innerHTML = c;
+            count++;
+        }
+    }
+
+    const getImageData = () => {
+        //get the minimum bounding box around the drawing 
         const mbb = getMinBox()
+
         //get image data according to dpi 
         const dpi = window.devicePixelRatio
         const imgData = canvas.contextContainer.getImageData(mbb.min.x * dpi, mbb.min.y * dpi,
             (mbb.max.x - mbb.min.x) * dpi, (mbb.max.y - mbb.min.y) * dpi);
         return imgData
+    }
+
+    const getClassNames = (indices) => {
+        var outp = []
+        for (var i = 0; i < indices.length; i++)
+            outp[i] = names[indices[i]]
+        return outp
     }
 
     const preprocess = (imgData) => {
@@ -82,16 +116,7 @@
         return outp;
     }
 
-    function findTopValues(inp, count) {
-        var outp = [];
-        let indices = findIndicesOfMax(inp, count)
-        // show 5 greatest scores
-        for (var i = 0; i < indices.length; i++)
-            outp[i] = inp[indices[i]]
-        return outp
-    }
-
-    function recordCoor(event) {
+    const recordCoor = (event) => {
         var pointer = canvas.getPointer(event.e);
         var posX = pointer.x;
         var posY = pointer.y;
@@ -101,7 +126,7 @@
         }
     }
 
-    function getMinBox() {
+    const getMinBox = () => {
         //get coordinates 
         var coorX = coords.map(function (p) {
             return p.x
@@ -126,5 +151,7 @@
             max: max_coords
         }
     }
+
+    loadNames()
 
 })();
